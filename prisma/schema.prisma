@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Condição física do produto no momento da compra.
+enum ProductCondition {
+  NOVO
+  SEMINOVO
+  USADO
+  COM_DEFEITO
+}
+
+enum ProductStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  MAINTENANCE
+}
+
+enum PaymentMethod {
+  PIX
+  DINHEIRO
+  TRANSFERENCIA
+  CARTAO
+  OUTROS
+}
+
+enum AttachmentKind {
+  COMPROVANTE_PIX
+  COMPROVANTE_TRANSFERENCIA
+  NOTA
+  RECIBO
+  FOTO_PRODUTO
+  CONVERSA
+  OUTRO
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionCategory {
+  COMPRA
+  VENDA
+  TRANSPORTE
+  MANUTENCAO
+  TAXAS
+  EMBALAGEM
+  ACESSORIOS
+  OUTROS
+}
+
+/// Espelha auth.users do Supabase — id é sempre o mesmo auth.uid().
+model Profile {
+  id        String   @id @db.Uuid
+  fullName  String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  categories             Category[]
+  products               Product[]
+  attachments            Attachment[]
+  financialTransactions  FinancialTransaction[]
+
+  @@map("profiles")
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+
+  products Product[]
+
+  @@unique([userId, slug])
+  @@map("categories")
+}
+
+model Product {
+  id               String           @id @default(uuid()) @db.Uuid
+  userId           String           @db.Uuid
+  user             Profile          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId       String           @db.Uuid
+  category         Category         @relation(fields: [categoryId], references: [id])
+  name             String
+  brand            String?
+  model            String?
+  serialNumber     String?
+  color            String?
+  condition        ProductCondition
+  description      String?
+  notes            String?
+  status           ProductStatus    @default(AVAILABLE)
+  desiredSalePrice Decimal?         @db.Decimal(12, 2)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  purchase Purchase?
+  sale     Sale?
+
+  @@index([userId, status])
+  @@index([userId, categoryId])
+  @@map("products")
+}
+
+/// Uma compra sempre cria exatamente um produto (relação 1:1) — nunca existe produto sem compra de origem.
+model Purchase {
+  id            String        @id @default(uuid()) @db.Uuid
+  productId     String        @unique @db.Uuid
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  purchaseDate  DateTime      @db.Date
+  paidAmount    Decimal       @db.Decimal(12, 2)
+  paymentMethod PaymentMethod
+  /// paidAmount + soma dos EXPENSE de financialTransactions ligados a esta compra (recalculado a cada mudança em lib/calculations.ts)
+  totalInvested Decimal       @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  seller                 PurchaseSeller?
+  attachments            Attachment[]
+  financialTransactions  FinancialTransaction[]
+
+  @@map("purchases")
+}
+
+model PurchaseSeller {
+  id         String   @id @default(uuid()) @db.Uuid
+  purchaseId String   @unique @db.Uuid
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  fullName   String
+  phone      String?
+  city       String?
+  state      String?
+  cpf        String?
+  notes      String?
+
+  @@map("purchase_sellers")
+}
+
+/// Uma venda está sempre associada a um produto que já foi comprado (relação 1:1 com Product).
+model Sale {
+  id            String        @id @default(uuid()) @db.Uuid
+  productId     String        @unique @db.Uuid
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  saleDate      DateTime      @db.Date
+  saleAmount    Decimal       @db.Decimal(12, 2)
+  paymentMethod PaymentMethod
+  /// saleAmount - purchase.paidAmount
+  grossProfit   Decimal       @db.Decimal(12, 2)
+  /// saleAmount - purchase.totalInvested - custos da venda
+  netProfit     Decimal       @db.Decimal(12, 2)
+  /// netProfit / purchase.totalInvested * 100
+  marginPercent Decimal       @db.Decimal(9, 2)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  buyer                  SaleBuyer?
+  attachments             Attachment[]
+  financialTransactions   FinancialTransaction[]
+
+  @@map("sales")
+}
+
+model SaleBuyer {
+  id       String  @id @default(uuid()) @db.Uuid
+  saleId   String  @unique @db.Uuid
+  sale     Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  fullName String
+  phone    String?
+  city     String?
+  state    String?
+  notes    String?
+
+  @@map("sale_buyers")
+}
+
+/// Sempre ligado a exatamente uma compra OU uma venda (nunca ambos, nunca nenhum) — validado em lib/validations, não no banco.
+model Attachment {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  user        Profile        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchaseId  String?        @db.Uuid
+  purchase    Purchase?      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  saleId      String?        @db.Uuid
+  sale        Sale?          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  kind        AttachmentKind
+  fileName    String
+  storagePath String
+  mimeType    String
+  sizeBytes   Int
+  createdAt   DateTime       @default(now())
+
+  @@index([purchaseId])
+  @@index([saleId])
+  @@map("attachments")
+}
+
+/// Ledger de fluxo de caixa. Compras/vendas geram lançamentos automaticamente (isAuto = true);
+/// lançamentos manuais (purchaseId e saleId nulos) alimentam o Financeiro/Fluxo de Caixa.
+model FinancialTransaction {
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @db.Uuid
+  user            Profile             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            TransactionType
+  category        TransactionCategory
+  amount          Decimal             @db.Decimal(12, 2)
+  description     String?
+  transactionDate DateTime            @db.Date
+  purchaseId      String?             @db.Uuid
+  purchase        Purchase?           @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  saleId          String?             @db.Uuid
+  sale            Sale?               @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  isAuto          Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?
+
+  @@index([userId, transactionDate])
+  @@index([userId, type, category])
+  @@map("financial_transactions")
+}
