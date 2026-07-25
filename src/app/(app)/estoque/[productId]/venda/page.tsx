@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SaleForm } from "@/components/sales/sale-form";
 import { formatCurrency } from "@/lib/format";
+import { activeOnly } from "@/lib/soft-delete";
 
 export default async function RegistrarVendaPage({
   params,
@@ -20,7 +21,7 @@ export default async function RegistrarVendaPage({
   });
 
   if (!product || !product.purchase) notFound();
-  if (product.sale) redirect(`/estoque/${product.id}`);
+  if (activeOnly(product.sale)) redirect(`/estoque/${product.id}`);
 
   return (
     <div className="flex flex-col gap-6">

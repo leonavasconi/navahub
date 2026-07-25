@@ -10,6 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { ProductStatusBadge } from "@/components/shared/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { QueryToast } from "@/components/shared/query-toast";
+import { PurchaseActions } from "@/components/stock/purchase-actions";
+import { SaleActions } from "@/components/stock/sale-actions";
+import { activeOnly } from "@/lib/soft-delete";
 import { calcDaysInStock } from "@/lib/calculations";
 import { formatCurrency, formatDate, formatDaysInStock, formatPercent } from "@/lib/format";
 import {
@@ -31,17 +34,26 @@ export default async function ProdutoPage({
     include: {
       category: true,
       purchase: {
-        include: { seller: true, attachments: true, financialTransactions: true },
+        include: {
+          seller: true,
+          attachments: true,
+          financialTransactions: { where: { deletedAt: null } },
+        },
       },
       sale: {
-        include: { buyer: true, attachments: true, financialTransactions: true },
+        include: {
+          buyer: true,
+          attachments: true,
+          financialTransactions: { where: { deletedAt: null } },
+        },
       },
     },
   });
 
   if (!product || !product.purchase) notFound();
 
-  const { purchase, sale } = product;
+  const { purchase } = product;
+  const sale = activeOnly(product.sale);
   const purchaseCostItems = purchase.financialTransactions.filter((t) => t.category !== "COMPRA");
   const saleCostItems = sale?.financialTransactions.filter((t) => t.category !== "VENDA") ?? [];
   const daysInStock = calcDaysInStock(purchase.purchaseDate, sale?.saleDate ?? new Date());
@@ -55,7 +67,7 @@ export default async function ProdutoPage({
   return (
     <div className="flex flex-col gap-6">
       <Suspense fallback={null}>
-        <QueryToast successMessage="Venda registrada com sucesso." />
+        <QueryToast />
       </Suspense>
       <div>
         <Link
@@ -141,8 +153,9 @@ export default async function ProdutoPage({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Compra</CardTitle>
+            <PurchaseActions productId={product.id} canDelete={!sale} />
           </CardHeader>
           <CardContent className="flex flex-col gap-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
@@ -181,8 +194,9 @@ export default async function ProdutoPage({
 
         {sale ? (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Venda</CardTitle>
+              <SaleActions productId={product.id} />
             </CardHeader>
             <CardContent className="flex flex-col gap-4 text-sm">
               <div className="grid grid-cols-2 gap-3">

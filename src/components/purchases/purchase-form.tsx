@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/shared/currency-input";
 import { CategoryCombobox } from "@/components/shared/category-combobox";
+import { AttachmentList, type AttachmentItem } from "@/components/shared/attachment-list";
 import {
   AttachmentUploader,
   type AttachmentDraft,
@@ -29,7 +30,7 @@ import {
   PRODUCT_CONDITIONS,
   PRODUCT_CONDITION_LABELS,
 } from "@/lib/validations/shared";
-import { createPurchase, type CreatePurchaseState } from "@/lib/actions/purchases";
+import { createPurchase, updatePurchase, type CreatePurchaseState } from "@/lib/actions/purchases";
 import { sumAmounts, calcTotalInvested } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 
@@ -42,24 +43,73 @@ type CostItemDraft = {
   amount: string;
 };
 
+export type PurchaseFormInitialValues = {
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  brand: string;
+  model: string;
+  serialNumber: string;
+  color: string;
+  condition: (typeof PRODUCT_CONDITIONS)[number];
+  description: string;
+  productNotes: string;
+  desiredSalePrice: string;
+  purchaseDate: string;
+  paidAmount: string;
+  paymentMethod: (typeof PAYMENT_METHODS)[number];
+  purchaseNotes: string;
+  costItems: { category: (typeof COST_CATEGORIES)[number]; description: string; amount: string }[];
+  sellerFullName: string;
+  sellerPhone: string;
+  sellerCity: string;
+  sellerState: string;
+  sellerCpf: string;
+  sellerNotes: string;
+};
+
 const initialState: CreatePurchaseState = { error: null };
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function PurchaseForm({ categories }: { categories: Category[] }) {
+export function PurchaseForm({
+  categories,
+  mode = "create",
+  productId,
+  initialValues,
+  existingAttachments,
+}: {
+  categories: Category[];
+  mode?: "create" | "edit";
+  productId?: string;
+  initialValues?: PurchaseFormInitialValues;
+  existingAttachments?: AttachmentItem[];
+}) {
   const router = useRouter();
-  const [state, dispatch, isPending] = useActionState(createPurchase, initialState);
+  const action = mode === "edit" ? updatePurchase.bind(null, productId!) : createPurchase;
+  const [state, dispatch, isPending] = useActionState(action, initialState);
 
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
-  const [condition, setCondition] = useState<(typeof PRODUCT_CONDITIONS)[number]>("SEMINOVO");
-  const [paymentMethod, setPaymentMethod] =
-    useState<(typeof PAYMENT_METHODS)[number]>("PIX");
-  const [purchaseDate, setPurchaseDate] = useState(todayISO());
-  const [paidAmount, setPaidAmount] = useState("");
-  const [costItems, setCostItems] = useState<CostItemDraft[]>([]);
+  const [categoryId, setCategoryId] = useState<string | undefined>(initialValues?.categoryId);
+  const [condition, setCondition] = useState<(typeof PRODUCT_CONDITIONS)[number]>(
+    initialValues?.condition ?? "SEMINOVO"
+  );
+  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>(
+    initialValues?.paymentMethod ?? "PIX"
+  );
+  const [purchaseDate, setPurchaseDate] = useState(initialValues?.purchaseDate ?? todayISO());
+  const [paidAmount, setPaidAmount] = useState(initialValues?.paidAmount ?? "");
+  const [costItems, setCostItems] = useState<CostItemDraft[]>(
+    initialValues?.costItems.map((item) => ({ id: crypto.randomUUID(), ...item })) ?? []
+  );
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
+  const initialCategories = useMemo(() => {
+    if (initialValues && !categories.some((c) => c.id === initialValues.categoryId)) {
+      return [...categories, { id: initialValues.categoryId, name: initialValues.categoryName }];
+    }
+    return categories;
+  }, [categories, initialValues]);
 
   const additionalCostsTotal = useMemo(
     () => sumAmounts(costItems.map((item) => Number(item.amount) || 0)),
@@ -128,13 +178,19 @@ export function PurchaseForm({ categories }: { categories: Category[] }) {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="name">Nome do produto</Label>
-            <Input id="name" name="name" placeholder="PlayStation 5 Slim" required />
+            <Input
+              id="name"
+              name="name"
+              placeholder="PlayStation 5 Slim"
+              defaultValue={initialValues?.name}
+              required
+            />
             {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
           </div>
 
           <div className="flex flex-col gap-2">
             <Label>Categoria</Label>
-            <CategoryCombobox categories={categories} value={categoryId} onChange={setCategoryId} />
+            <CategoryCombobox categories={initialCategories} value={categoryId} onChange={setCategoryId} />
             {errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId}</p>}
           </div>
 
@@ -156,37 +212,56 @@ export function PurchaseForm({ categories }: { categories: Category[] }) {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="brand">Marca</Label>
-            <Input id="brand" name="brand" placeholder="Sony" />
+            <Input id="brand" name="brand" placeholder="Sony" defaultValue={initialValues?.brand} />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="model">Modelo</Label>
-            <Input id="model" name="model" placeholder="CFI-2014A" />
+            <Input
+              id="model"
+              name="model"
+              placeholder="CFI-2014A"
+              defaultValue={initialValues?.model}
+            />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="serialNumber">Número de série</Label>
-            <Input id="serialNumber" name="serialNumber" />
+            <Input id="serialNumber" name="serialNumber" defaultValue={initialValues?.serialNumber} />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="color">Cor</Label>
-            <Input id="color" name="color" placeholder="Branco" />
+            <Input id="color" name="color" placeholder="Branco" defaultValue={initialValues?.color} />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="desiredSalePrice">Preço desejado de venda</Label>
-            <CurrencyInput id="desiredSalePrice" name="desiredSalePrice" />
+            <CurrencyInput
+              id="desiredSalePrice"
+              name="desiredSalePrice"
+              defaultValue={initialValues?.desiredSalePrice}
+            />
           </div>
 
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="description">Descrição</Label>
-            <Textarea id="description" name="description" rows={2} />
+            <Textarea
+              id="description"
+              name="description"
+              rows={2}
+              defaultValue={initialValues?.description}
+            />
           </div>
 
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="productNotes">Observações</Label>
-            <Textarea id="productNotes" name="productNotes" rows={2} />
+            <Textarea
+              id="productNotes"
+              name="productNotes"
+              rows={2}
+              defaultValue={initialValues?.productNotes}
+            />
           </div>
         </CardContent>
       </Card>
@@ -298,7 +373,12 @@ export function PurchaseForm({ categories }: { categories: Category[] }) {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="purchaseNotes">Observações da compra</Label>
-            <Textarea id="purchaseNotes" name="purchaseNotes" rows={2} />
+            <Textarea
+              id="purchaseNotes"
+              name="purchaseNotes"
+              rows={2}
+              defaultValue={initialValues?.purchaseNotes}
+            />
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-muted/60 px-4 py-3">
@@ -318,30 +398,51 @@ export function PurchaseForm({ categories }: { categories: Category[] }) {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="sellerFullName">Nome completo</Label>
-            <Input id="sellerFullName" name="sellerFullName" required />
+            <Input
+              id="sellerFullName"
+              name="sellerFullName"
+              defaultValue={initialValues?.sellerFullName}
+              required
+            />
             {errors.sellerFullName && (
               <p className="text-sm text-destructive">{errors.sellerFullName}</p>
             )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="sellerPhone">Telefone</Label>
-            <Input id="sellerPhone" name="sellerPhone" placeholder="(11) 91234-5678" />
+            <Input
+              id="sellerPhone"
+              name="sellerPhone"
+              placeholder="(11) 91234-5678"
+              defaultValue={initialValues?.sellerPhone}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="sellerCpf">CPF (opcional)</Label>
-            <Input id="sellerCpf" name="sellerCpf" />
+            <Input id="sellerCpf" name="sellerCpf" defaultValue={initialValues?.sellerCpf} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="sellerCity">Cidade</Label>
-            <Input id="sellerCity" name="sellerCity" />
+            <Input id="sellerCity" name="sellerCity" defaultValue={initialValues?.sellerCity} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="sellerState">Estado</Label>
-            <Input id="sellerState" name="sellerState" placeholder="SP" maxLength={2} />
+            <Input
+              id="sellerState"
+              name="sellerState"
+              placeholder="SP"
+              maxLength={2}
+              defaultValue={initialValues?.sellerState}
+            />
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="sellerNotes">Observações</Label>
-            <Textarea id="sellerNotes" name="sellerNotes" rows={2} />
+            <Textarea
+              id="sellerNotes"
+              name="sellerNotes"
+              rows={2}
+              defaultValue={initialValues?.sellerNotes}
+            />
           </div>
         </CardContent>
       </Card>
@@ -351,7 +452,13 @@ export function PurchaseForm({ categories }: { categories: Category[] }) {
           <CardTitle>Comprovantes</CardTitle>
           <CardDescription>Anexe comprovantes, notas ou fotos do produto.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {existingAttachments && existingAttachments.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">Já anexados</p>
+              <AttachmentList attachments={existingAttachments} />
+            </div>
+          )}
           <AttachmentUploader value={attachments} onChange={setAttachments} />
         </CardContent>
       </Card>
@@ -363,12 +470,16 @@ export function PurchaseForm({ categories }: { categories: Category[] }) {
       )}
 
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => router.push("/compras")}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(mode === "edit" ? `/estoque/${productId}` : "/compras")}
+        >
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending && <Loader2 className="animate-spin" />}
-          Salvar compra
+          {mode === "edit" ? "Salvar alterações" : "Salvar compra"}
         </Button>
       </div>
     </form>

@@ -34,7 +34,7 @@ export default async function ComprasPage() {
   return (
     <div className="flex flex-col gap-6">
       <Suspense fallback={null}>
-        <QueryToast successMessage="Compra registrada com sucesso." />
+        <QueryToast />
       </Suspense>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

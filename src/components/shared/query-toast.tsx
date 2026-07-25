@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-export function QueryToast({ successMessage }: { successMessage: string }) {
+export function QueryToast() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -17,10 +17,10 @@ export function QueryToast({ successMessage }: { successMessage: string }) {
     if (warning) {
       toast.warning(warning);
     } else if (success) {
-      toast.success(successMessage);
+      toast.success(success);
     }
     router.replace(pathname, { scroll: false });
-  }, [success, warning, successMessage, router, pathname]);
+  }, [success, warning, router, pathname]);
 
   return null;
 }

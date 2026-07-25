@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/shared/currency-input";
+import { AttachmentList, type AttachmentItem } from "@/components/shared/attachment-list";
 import {
   AttachmentUploader,
   type AttachmentDraft,
@@ -26,7 +27,7 @@ import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
 } from "@/lib/validations/shared";
-import { createSale, type CreateSaleState } from "@/lib/actions/sales";
+import { createSale, updateSale, type CreateSaleState } from "@/lib/actions/sales";
 import { sumAmounts, calcGrossProfit, calcNetProfit, calcMarginPercent } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
@@ -35,6 +36,19 @@ type CostItemDraft = {
   category: (typeof COST_CATEGORIES)[number];
   description: string;
   amount: string;
+};
+
+export type SaleFormInitialValues = {
+  saleDate: string;
+  saleAmount: string;
+  paymentMethod: (typeof PAYMENT_METHODS)[number];
+  saleNotes: string;
+  costItems: { category: (typeof COST_CATEGORIES)[number]; description: string; amount: string }[];
+  buyerFullName: string;
+  buyerPhone: string;
+  buyerCity: string;
+  buyerState: string;
+  buyerNotes: string;
 };
 
 const initialState: CreateSaleState = { error: null };
@@ -47,19 +61,29 @@ export function SaleForm({
   productId,
   paidAmount,
   totalInvested,
+  mode = "create",
+  initialValues,
+  existingAttachments,
 }: {
   productId: string;
   paidAmount: number;
   totalInvested: number;
+  mode?: "create" | "edit";
+  initialValues?: SaleFormInitialValues;
+  existingAttachments?: AttachmentItem[];
 }) {
   const router = useRouter();
-  const action = createSale.bind(null, productId);
+  const action = (mode === "edit" ? updateSale : createSale).bind(null, productId);
   const [state, dispatch, isPending] = useActionState(action, initialState);
 
-  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("PIX");
-  const [saleDate, setSaleDate] = useState(todayISO());
-  const [saleAmount, setSaleAmount] = useState("");
-  const [costItems, setCostItems] = useState<CostItemDraft[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>(
+    initialValues?.paymentMethod ?? "PIX"
+  );
+  const [saleDate, setSaleDate] = useState(initialValues?.saleDate ?? todayISO());
+  const [saleAmount, setSaleAmount] = useState(initialValues?.saleAmount ?? "");
+  const [costItems, setCostItems] = useState<CostItemDraft[]>(
+    initialValues?.costItems.map((item) => ({ id: crypto.randomUUID(), ...item })) ?? []
+  );
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
 
   const saleCostsTotal = useMemo(
@@ -234,7 +258,7 @@ export function SaleForm({
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="saleNotes">Observações</Label>
-            <Textarea id="saleNotes" name="saleNotes" rows={2} />
+            <Textarea id="saleNotes" name="saleNotes" rows={2} defaultValue={initialValues?.saleNotes} />
           </div>
 
           <div className="grid grid-cols-3 gap-3 rounded-lg bg-muted/60 px-4 py-3 text-center">
@@ -262,26 +286,42 @@ export function SaleForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="buyerFullName">Nome completo</Label>
-            <Input id="buyerFullName" name="buyerFullName" required />
+            <Input
+              id="buyerFullName"
+              name="buyerFullName"
+              defaultValue={initialValues?.buyerFullName}
+              required
+            />
             {errors.buyerFullName && (
               <p className="text-sm text-destructive">{errors.buyerFullName}</p>
             )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="buyerPhone">Telefone</Label>
-            <Input id="buyerPhone" name="buyerPhone" placeholder="(11) 91234-5678" />
+            <Input
+              id="buyerPhone"
+              name="buyerPhone"
+              placeholder="(11) 91234-5678"
+              defaultValue={initialValues?.buyerPhone}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="buyerCity">Cidade</Label>
-            <Input id="buyerCity" name="buyerCity" />
+            <Input id="buyerCity" name="buyerCity" defaultValue={initialValues?.buyerCity} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="buyerState">Estado</Label>
-            <Input id="buyerState" name="buyerState" placeholder="SP" maxLength={2} />
+            <Input
+              id="buyerState"
+              name="buyerState"
+              placeholder="SP"
+              maxLength={2}
+              defaultValue={initialValues?.buyerState}
+            />
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="buyerNotes">Observações</Label>
-            <Textarea id="buyerNotes" name="buyerNotes" rows={2} />
+            <Textarea id="buyerNotes" name="buyerNotes" rows={2} defaultValue={initialValues?.buyerNotes} />
           </div>
         </CardContent>
       </Card>
@@ -291,7 +331,13 @@ export function SaleForm({
           <CardTitle>Comprovantes</CardTitle>
           <CardDescription>Anexe comprovante de pagamento, recibo ou outros documentos.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {existingAttachments && existingAttachments.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">Já anexados</p>
+              <AttachmentList attachments={existingAttachments} />
+            </div>
+          )}
           <AttachmentUploader value={attachments} onChange={setAttachments} />
         </CardContent>
       </Card>
@@ -303,12 +349,12 @@ export function SaleForm({
       )}
 
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="outline" onClick={() => router.push(`/estoque/${productId}`)}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending && <Loader2 className="animate-spin" />}
-          Registrar venda
+          {mode === "edit" ? "Salvar alterações" : "Registrar venda"}
         </Button>
       </div>
     </form>
