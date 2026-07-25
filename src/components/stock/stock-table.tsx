@@ -34,7 +34,6 @@ export type StockRow = {
   purchaseDate: string;
   totalInvested: number;
   daysInStock: number;
-  desiredSalePrice: number | null;
   status: (typeof PRODUCT_STATUSES)[number];
 };
 
@@ -208,7 +207,6 @@ export function StockTable({
                   <TableHead>Categoria</TableHead>
                   <TableHead>Compra</TableHead>
                   <TableHead className="text-right">Custo total</TableHead>
-                  <TableHead className="text-right">Preço desejado</TableHead>
                   <TableHead className="text-right">Dias em estoque</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -230,9 +228,6 @@ export function StockTable({
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(p.totalInvested)}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {p.desiredSalePrice != null ? formatCurrency(p.desiredSalePrice) : "—"}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {formatDaysInStock(p.daysInStock)}
@@ -272,10 +267,6 @@ export function StockTable({
                   <div>
                     <p className="text-muted-foreground">Custo total</p>
                     <p className="font-medium">{formatCurrency(p.totalInvested)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Preço desejado</p>
-                    <p>{p.desiredSalePrice != null ? formatCurrency(p.desiredSalePrice) : "—"}</p>
                   </div>
                 </div>
               </Link>

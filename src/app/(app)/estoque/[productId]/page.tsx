@@ -57,10 +57,6 @@ export default async function ProdutoPage({
   const purchaseCostItems = purchase.financialTransactions.filter((t) => t.category !== "COMPRA");
   const saleCostItems = sale?.financialTransactions.filter((t) => t.category !== "VENDA") ?? [];
   const daysInStock = calcDaysInStock(purchase.purchaseDate, sale?.saleDate ?? new Date());
-  const estimatedProfit =
-    !sale && product.desiredSalePrice != null
-      ? Number(product.desiredSalePrice) - Number(purchase.totalInvested)
-      : null;
 
   const attachments = [...purchase.attachments, ...(sale?.attachments ?? [])];
 
@@ -100,25 +96,10 @@ export default async function ProdutoPage({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryStat label="Investimento" value={formatCurrency(purchase.totalInvested)} />
+        <SummaryStat label="Venda" value={sale ? formatCurrency(sale.saleAmount) : "Pendente"} />
         <SummaryStat
-          label={sale ? "Venda" : "Preço desejado"}
-          value={
-            sale
-              ? formatCurrency(sale.saleAmount)
-              : product.desiredSalePrice != null
-                ? formatCurrency(product.desiredSalePrice)
-                : "—"
-          }
-        />
-        <SummaryStat
-          label={sale ? "Lucro líquido" : "Lucro estimado"}
-          value={
-            sale
-              ? formatCurrency(sale.netProfit)
-              : estimatedProfit != null
-                ? formatCurrency(estimatedProfit)
-                : "—"
-          }
+          label="Lucro líquido"
+          value={sale ? formatCurrency(sale.netProfit) : "Pendente"}
           highlight
         />
         <SummaryStat
@@ -137,18 +118,6 @@ export default async function ProdutoPage({
             <Field label="Cor" value={product.color ?? "—"} />
             <Field label="Número de série" value={product.serialNumber ?? "—"} />
             <Field label="Categoria" value={product.category.name} />
-            {product.description && (
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Descrição</p>
-                <p>{product.description}</p>
-              </div>
-            )}
-            {product.notes && (
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Observações</p>
-                <p>{product.notes}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 

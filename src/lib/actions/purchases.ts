@@ -47,20 +47,15 @@ async function parsePurchaseForm(userId: string, formData: FormData): Promise<Pa
     serialNumber: formData.get("serialNumber") || undefined,
     color: formData.get("color") || undefined,
     condition: formData.get("condition"),
-    description: formData.get("description") || undefined,
-    productNotes: formData.get("productNotes") || undefined,
-    desiredSalePrice: formData.get("desiredSalePrice") ?? "",
     purchaseDate: formData.get("purchaseDate"),
     paidAmount: formData.get("paidAmount"),
     paymentMethod: formData.get("paymentMethod"),
-    purchaseNotes: formData.get("purchaseNotes") || undefined,
     costItems,
     sellerFullName: formData.get("sellerFullName"),
     sellerPhone: formData.get("sellerPhone") || undefined,
     sellerCity: formData.get("sellerCity") || undefined,
     sellerState: formData.get("sellerState") || undefined,
     sellerCpf: formData.get("sellerCpf") || undefined,
-    sellerNotes: formData.get("sellerNotes") || undefined,
   };
 
   const parsed = purchaseFormSchema.safeParse(raw);
@@ -172,9 +167,6 @@ export async function createPurchase(
         serialNumber: data.serialNumber,
         color: data.color,
         condition: data.condition,
-        description: data.description,
-        notes: data.productNotes,
-        desiredSalePrice: data.desiredSalePrice,
       },
     });
 
@@ -185,7 +177,6 @@ export async function createPurchase(
         paidAmount: data.paidAmount,
         paymentMethod: data.paymentMethod,
         totalInvested,
-        notes: data.purchaseNotes,
       },
     });
 
@@ -197,7 +188,6 @@ export async function createPurchase(
         city: data.sellerCity,
         state: data.sellerState,
         cpf: data.sellerCpf,
-        notes: data.sellerNotes,
       },
     });
 
@@ -284,9 +274,6 @@ export async function updatePurchase(
         serialNumber: data.serialNumber,
         color: data.color,
         condition: data.condition,
-        description: data.description,
-        notes: data.productNotes,
-        desiredSalePrice: data.desiredSalePrice,
       },
     });
 
@@ -297,7 +284,6 @@ export async function updatePurchase(
         paidAmount: data.paidAmount,
         paymentMethod: data.paymentMethod,
         totalInvested,
-        notes: data.purchaseNotes,
       },
     });
 
@@ -309,7 +295,6 @@ export async function updatePurchase(
         city: data.sellerCity,
         state: data.sellerState,
         cpf: data.sellerCpf,
-        notes: data.sellerNotes,
       },
     });
 

@@ -54,20 +54,15 @@ export default async function EditarCompraPage({
     serialNumber: product.serialNumber ?? "",
     color: product.color ?? "",
     condition: product.condition,
-    description: product.description ?? "",
-    productNotes: product.notes ?? "",
-    desiredSalePrice: product.desiredSalePrice != null ? String(product.desiredSalePrice) : "",
     purchaseDate: purchase.purchaseDate.toISOString().slice(0, 10),
     paidAmount: String(purchase.paidAmount),
     paymentMethod: purchase.paymentMethod,
-    purchaseNotes: purchase.notes ?? "",
     costItems,
     sellerFullName: purchase.seller?.fullName ?? "",
     sellerPhone: purchase.seller?.phone ?? "",
     sellerCity: purchase.seller?.city ?? "",
     sellerState: purchase.seller?.state ?? "",
     sellerCpf: purchase.seller?.cpf ?? "",
-    sellerNotes: purchase.seller?.notes ?? "",
   };
 
   return (

@@ -32,7 +32,6 @@ export default async function EstoquePage() {
         purchaseDate: p.purchase!.purchaseDate.toISOString(),
         totalInvested: Number(p.purchase!.totalInvested),
         daysInStock: calcDaysInStock(p.purchase!.purchaseDate, sale?.saleDate ?? new Date()),
-        desiredSalePrice: p.desiredSalePrice != null ? Number(p.desiredSalePrice) : null,
         status: p.status,
       };
     });

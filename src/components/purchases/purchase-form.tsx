@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,20 +51,15 @@ export type PurchaseFormInitialValues = {
   serialNumber: string;
   color: string;
   condition: (typeof PRODUCT_CONDITIONS)[number];
-  description: string;
-  productNotes: string;
-  desiredSalePrice: string;
   purchaseDate: string;
   paidAmount: string;
   paymentMethod: (typeof PAYMENT_METHODS)[number];
-  purchaseNotes: string;
   costItems: { category: (typeof COST_CATEGORIES)[number]; description: string; amount: string }[];
   sellerFullName: string;
   sellerPhone: string;
   sellerCity: string;
   sellerState: string;
   sellerCpf: string;
-  sellerNotes: string;
 };
 
 const initialState: CreatePurchaseState = { error: null };
@@ -234,35 +228,6 @@ export function PurchaseForm({
             <Label htmlFor="color">Cor</Label>
             <Input id="color" name="color" placeholder="Branco" defaultValue={initialValues?.color} />
           </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="desiredSalePrice">Preço desejado de venda</Label>
-            <CurrencyInput
-              id="desiredSalePrice"
-              name="desiredSalePrice"
-              defaultValue={initialValues?.desiredSalePrice}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              name="description"
-              rows={2}
-              defaultValue={initialValues?.description}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="productNotes">Observações</Label>
-            <Textarea
-              id="productNotes"
-              name="productNotes"
-              rows={2}
-              defaultValue={initialValues?.productNotes}
-            />
-          </div>
         </CardContent>
       </Card>
 
@@ -371,16 +336,6 @@ export function PurchaseForm({
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="purchaseNotes">Observações da compra</Label>
-            <Textarea
-              id="purchaseNotes"
-              name="purchaseNotes"
-              rows={2}
-              defaultValue={initialValues?.purchaseNotes}
-            />
-          </div>
-
           <div className="flex items-center justify-between rounded-lg bg-muted/60 px-4 py-3">
             <span className="text-sm font-medium">Valor total investido</span>
             <span className="text-lg font-semibold text-primary">
@@ -433,15 +388,6 @@ export function PurchaseForm({
               placeholder="SP"
               maxLength={2}
               defaultValue={initialValues?.sellerState}
-            />
-          </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="sellerNotes">Observações</Label>
-            <Textarea
-              id="sellerNotes"
-              name="sellerNotes"
-              rows={2}
-              defaultValue={initialValues?.sellerNotes}
             />
           </div>
         </CardContent>
