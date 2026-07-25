@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -88,8 +89,12 @@ export function PurchasesTable({ purchases }: { purchases: PurchaseRow[] }) {
               </TableHeader>
               <TableBody>
                 {pageItems.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.productName}</TableCell>
+                  <TableRow key={p.id} className="cursor-pointer">
+                    <TableCell className="font-medium">
+                      <Link href={`/estoque/${p.productId}`} className="hover:underline">
+                        {p.productName}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{p.categoryName}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(p.purchaseDate)}
@@ -111,7 +116,11 @@ export function PurchasesTable({ purchases }: { purchases: PurchaseRow[] }) {
           {/* Mobile */}
           <div className="flex flex-col gap-3 md:hidden">
             {pageItems.map((p) => (
-              <div key={p.id} className="rounded-xl border p-4">
+              <Link
+                key={p.id}
+                href={`/estoque/${p.productId}`}
+                className="rounded-xl border p-4 transition-colors hover:bg-muted/40"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{p.productName}</p>
@@ -137,7 +146,7 @@ export function PurchasesTable({ purchases }: { purchases: PurchaseRow[] }) {
                     <p className="font-medium">{formatCurrency(p.totalInvested)}</p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
