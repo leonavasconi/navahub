@@ -1,9 +1,7 @@
-import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Package, TrendingUp, Wallet } from "lucide-react";
-import { LoginForm } from "./login-form";
-import { QueryToast } from "@/components/shared/query-toast";
+import { SignupForm } from "./signup-form";
 
 const FEATURES = [
   { icon: Package, label: "Estoque", description: "Saiba o que ainda está com você" },
@@ -11,18 +9,9 @@ const FEATURES = [
   { icon: Wallet, label: "Financeiro", description: "Fluxo de caixa sempre em dia" },
 ];
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ next?: string }>;
-}) {
-  const { next } = await searchParams;
-
+export default function CadastroPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <Suspense fallback={null}>
-        <QueryToast />
-      </Suspense>
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-chart-2 to-chart-3 p-12 text-primary-foreground lg:flex">
         <div>
           <span className="text-2xl font-semibold tracking-tight">NavaHub</span>
@@ -30,7 +19,7 @@ export default async function LoginPage({
 
         <div className="flex flex-col gap-8">
           <h1 className="max-w-md text-3xl leading-tight font-semibold">
-            Seu painel central de compras, vendas e estoque.
+            Cada conta com seu próprio estoque, vendas e financeiro.
           </h1>
           <div className="flex flex-col gap-4">
             {FEATURES.map(({ icon: Icon, label, description }) => (
@@ -55,27 +44,21 @@ export default async function LoginPage({
       <div className="flex items-center justify-center bg-background p-6">
         <div className="flex w-full max-w-sm flex-col gap-8">
           <div className="flex flex-col items-center gap-6 text-center">
-            <Image
-              src="/branding/logo.png"
-              alt="NavaHub"
-              width={200}
-              height={55}
-              priority
-            />
+            <Image src="/branding/logo.png" alt="NavaHub" width={200} height={55} priority />
             <div className="flex flex-col gap-1">
-              <h2 className="text-xl font-semibold text-foreground">Bem-vindo de volta</h2>
+              <h2 className="text-xl font-semibold text-foreground">Criar conta</h2>
               <p className="text-sm text-muted-foreground">
-                Entre com suas credenciais para acessar o painel.
+                Seus dados ficam separados de qualquer outra conta no NavaHub.
               </p>
             </div>
           </div>
 
-          <LoginForm next={next ?? "/dashboard"} />
+          <SignupForm />
 
           <p className="text-center text-sm text-muted-foreground">
-            Ainda não tem uma conta?{" "}
-            <Link href="/cadastro" className="font-medium text-primary hover:underline">
-              Criar conta
+            Já tem uma conta?{" "}
+            <Link href="/login" className="font-medium text-primary hover:underline">
+              Entrar
             </Link>
           </p>
         </div>

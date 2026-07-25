@@ -1,32 +1,11 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { DEFAULT_CATEGORIES, slugify } from "../src/lib/categories";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
-
-const DEFAULT_CATEGORIES = [
-  "PlayStation",
-  "Xbox",
-  "Nintendo",
-  "iPhone",
-  "Smartphone",
-  "MacBook",
-  "Notebook",
-  "Tablet",
-  "Acessórios",
-  "Outros",
-];
-
-function slugify(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 async function main() {
   const profiles = await prisma.profile.findMany({ select: { id: true, email: true } });
